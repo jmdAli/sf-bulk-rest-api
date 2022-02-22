@@ -1,0 +1,17 @@
+%dw 2.0
+
+type auto_539bfa01_9f72_409e_a173_ced7dbba5d27_Output_Payload = {|
+  sessionId: Any, 
+  maxRecords: Null, 
+  jobId: Null, 
+  destination: Null, 
+  category: Null, 
+  feedlocloc: Null, 
+  feedname: Null, 
+  delimiter: Null, 
+  dwFileName: Null, 
+  typeOfFile: Null, 
+  sendDoneFile: Null, 
+  idpTraceId: Null
+|}
+

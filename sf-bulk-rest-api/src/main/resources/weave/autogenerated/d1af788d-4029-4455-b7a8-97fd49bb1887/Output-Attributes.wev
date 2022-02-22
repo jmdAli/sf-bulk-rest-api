@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_d1af788d_4029_4455_b7a8_97fd49bb1887_Output_Attributes = { _?: String }
+

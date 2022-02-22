@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:att-mule-applicationlogger="http://www.mulesoft.org/schema/mule/att-mule-applicationlogger"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/att-mule-applicationlogger http://www.mulesoft.org/schema/mule/att-mule-applicationlogger/current/mule-att-mule-applicationlogger.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="sf-bulk-rest-apiFlow" doc:id="c34b61fa-6f73-45ef-a72f-b1ef48f52c48" >
+		<http:listener doc:name="Listener" doc:id="819f85a7-680b-4ac0-9cf8-ed6bdd8bce97" config-ref="HTTP_LISTENER_CONFIG" path="/restapi"/>
+		<logger level="INFO" doc:name="start-sr-bulk-rest-apiFlow" doc:id="c7b8cef9-97e6-42c9-ba77-fac9ee2804aa" message="received request sf-bulk-rest-apiFlow"/>
+		<ee:transform doc:name="set-queryfinder" doc:id="6d3f7501-421e-48fa-9a3c-9a376889dced">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable resource="dw/queryfinder.dwl" variableName="queryfinder" />
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="call-sf-create-bulk-api-flow" doc:id="1de55879-c6ff-4009-aade-d4e74047bb78" name="sf-create-bulk-api-flow" />
+		<until-successful maxRetries="2" doc:name="Until Successful" doc:id="9c8f55f3-dec5-4b86-87f8-a7bbee8b2cb7" millisBetweenRetries="6000">
+			<flow-ref doc:name="call-get-bulk-query-job-info-flow" doc:id="c6d19867-6ead-40b3-9416-4213bfad63b8" name="get-bulk-query-job-info-flow" />
+			<set-variable value="#[payload.state]" doc:name="set-batch-state" doc:id="d2e0cfcf-3b51-4ef7-b4eb-e2374fed57ab" variableName="batchstate" />
+			<choice doc:name="Choice" doc:id="ff9da037-f422-41d7-a7d8-dd5587e8c52d">
+			<when expression='#[vars.batchState != "JobComplete"]'>
+				<raise-error doc:name="batch-not-completed" doc:id="338afb31-45c3-4e16-a853-75555ec30a5d" type='"CUSTOM:CUSTOM_ERROR"' description="batchprocessig not completed" />
+			</when>
+			<otherwise>
+				<logger level="ERROR" doc:name="Logger" doc:id="f8125442-40c6-4612-8a92-a66878692901" message="batch SFO job status completed" />
+			</otherwise>
+		</choice>
+		</until-successful>
+		<flow-ref doc:name="call-bulk-api-v2" doc:id="fe470ffc-371a-4005-a459-1ac59eae183f" name="invoke-get-sessionId-bulk-api-v2"/>
+		<logger level="INFO" doc:name="end-sf-bulk-rest-apiFlow" doc:id="ef7be18e-183f-4904-82bb-bf04ad4a4272" message="response sent to calling api"/>
+		<ee:transform doc:name="Transform Message" doc:id="4119a33b-5a3b-466c-b14b-7e57a0a0c5e0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status" : "success",
+	"message" : "request is submitted for processing"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

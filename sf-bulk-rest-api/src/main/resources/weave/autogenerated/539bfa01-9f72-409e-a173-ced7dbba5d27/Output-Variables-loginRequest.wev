@@ -1,0 +1,16 @@
+%dw 2.0
+// namespaces
+ns ns1 urn:partner.soap.sforce.com
+ns ns0 http://schemas.xmlsoap.org/soap/envelope/
+
+type auto_539bfa01_9f72_409e_a173_ced7dbba5d27_Output_Variables_loginRequest = {|
+  ns0#Envelope: {|
+    ns0#Body: {|
+      ns1#login: {|
+        ns1#username: String, 
+        ns1#password: String
+      |}
+    |}
+  |}
+|}
+

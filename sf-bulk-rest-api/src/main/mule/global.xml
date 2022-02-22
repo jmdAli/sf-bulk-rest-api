@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule
+	xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub"
+	xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:att-mule-applicationlogger="http://www.mulesoft.org/schema/mule/att-mule-applicationlogger"
+	xmlns:kafka="http://www.mulesoft.org/schema/mule/kafka"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:sftp="http://www.mulesoft.org/schema/mule/sftp"
+	xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:objectstore="http://www.mulesoft.org/schema/mule/objectstore"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd 
+http://www.mulesoft.org/schema/mule/objectstore http://www.mulesoft.org/schema/mule/objectstore/current/mule-objectstore.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/sftp http://www.mulesoft.org/schema/mule/sftp/current/mule-sftp.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/att-mule-applicationlogger http://www.mulesoft.org/schema/mule/att-mule-applicationlogger/current/mule-att-mule-applicationlogger.xsd
+http://www.mulesoft.org/schema/mule/kafka http://www.mulesoft.org/schema/mule/kafka/current/mule-kafka.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+	<global-property doc:name="Global Property"
+		doc:id="a234e9a1-8b37-4508-9dfa-0ed71f7d325d" name="mule.env"
+		value="Dev" />
+	<global-property doc:name="Global Property"
+		doc:id="cf94116f-23c3-44f9-a3f9-b5cf706cadaa" name="mule.key"
+		value="Mulesoft12345678" />
+	<global-property doc:name="Global Property"
+		doc:id="4f1f2c81-ae26-471b-928f-f47159469f23" name="application.name"
+		value="sf-bulk-rest-api" />
+	<http:listener-config name="HTTP_LISTENER_CONFIG"
+		doc:name="HTTP Listener config"
+		doc:id="a5b41292-095d-4681-8600-ebcd74502994">
+		<http:listener-connection
+			host="${environment.Http.host}"
+			port="${environment.Http.httpsport}"/>
+	</http:listener-config>
+	<salesforce:sfdc-config
+		name="Salesforce-config" doc:name="Salesforce Config"
+		doc:id="27921dc5-67c7-438d-970c-bd0be84dddfc">
+		<salesforce:basic-connection
+			username="${environment.salesforce.username}"
+			password="${environment.salesforce.password}"
+			securityToken="${environment.salesforce.securitytoken}"
+			url="${environment.salesforce.aauthUrl}">
+			<reconnection>
+				<reconnect
+					frequency="${environment.salesforce.retry.frequency}"
+					count="${environment.salesforce.retry.reconnectattempts}" />
+			</reconnection>
+			<tls:context>
+				<tls:key-store type="pkcs12"
+					path="${environment.sf.keyStore.path}"
+					keyPassword="${environment.sf.keyStore.keyPassword}"
+					password="${environment.sf.keyStore.password}" />
+			</tls:context>
+		</salesforce:basic-connection>
+	</salesforce:sfdc-config>
+
+	<http:request-config
+		name="SFDC_REST_API_httpRequestConfig"
+		doc:name="HTTP Request configuration"
+		doc:id="2c11ffb7-3338-4afc-a319-c9fcddec7c4e"
+		responseTimeout="${sfdc-bulk-v2-api.responseTimeout}"
+		basePath="${sfdc-bulk-v2-api.basePath}">
+		<http:request-connection
+			host="${sfdc-bulk-v2-api.host}"
+			port="${sfdc-bulk-v2-api.port}" protocol="HTTPS"
+			connectionIdleTimeout="${sfdc-bulk-v2-api.connectionIdleTimeout}"
+			tlsContext="TLS_Context_SF" usePersistentConnections="false">
+			<reconnection>
+				<reconnect
+					frequency="${sfdc-bulk-v2-api.reconnection.frequency}"
+					count="${sfdc-bulk-v2-api.reconnection.attempts}" />
+			</reconnection>
+		</http:request-connection>
+	</http:request-config>
+	<vm:config name="Recursive_VM_Config" doc:name="VM Config"
+		doc:id="29511075-63cb-4f65-9a23-fd198887c886">
+		<vm:queues>
+			<vm:queue queueName="recursiveQueue" />
+		</vm:queues>
+	</vm:config>
+
+
+	<tls:context name="TLS_Context_SF" doc:name="TLS Context"
+		doc:id="32dcd130-f0eb-4ee0-9b13-6984ba2fde4d">
+		<tls:trust-store insecure="true" />
+		<tls:key-store type="pkcs12"
+			path="${environment.sf.keyStore.path}"
+			keyPassword="${environment.sf.keyStore.keyPassword}"
+			password="${environment.sf.keyStore.password}" />
+	</tls:context>
+	<configuration-properties doc:name="Configuration properties" doc:id="85b47364-b5c6-4eb6-918d-64a893b17213" file="config/config-Dev.yaml" />
+	
+
+</mule>

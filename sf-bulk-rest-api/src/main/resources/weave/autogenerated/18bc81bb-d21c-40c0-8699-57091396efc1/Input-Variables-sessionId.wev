@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_18bc81bb_d21c_40c0_8699_57091396efc1_Input_Variables_sessionId = Any
+

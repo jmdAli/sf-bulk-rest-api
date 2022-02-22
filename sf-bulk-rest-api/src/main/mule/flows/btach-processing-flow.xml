@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:att-mule-applicationlogger="http://www.mulesoft.org/schema/mule/att-mule-applicationlogger"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/att-mule-applicationlogger http://www.mulesoft.org/schema/mule/att-mule-applicationlogger/current/mule-att-mule-applicationlogger.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<file:config name="File_Config" doc:name="File Config" doc:id="3df8ee4f-7b52-4af6-9df3-3590ee59f920" />
+	<flow name="batch-aggregator-flow"
+		doc:id="18bc81bb-d21c-40c0-8699-57091396efc1">
+		<batch:job jobName="log-aggregator-push-logs-flow"
+			doc:id="20804676-fe87-458d-b5f0-338fc2f05f6c"
+			blockSize="${common.batch.block.size}"
+			maxFailedRecords="1">
+			<batch:process-records>
+				<batch:step name="batch_Step"
+					doc:id="b6a95e8b-32c6-4e3a-af1f-23c1ce66b644">
+					<ee:transform doc:name="transform-query-res"
+						doc:id="b128f4ac-a2a1-4bbd-ab50-4efea0b07183">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/java 
+---
+payload]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<batch:aggregator doc:name="Batch Aggregator"
+						doc:id="f0af8693-c629-4424-856f-9dd536cfa33f"
+						size="${common.batch.agrregator.small.size}">
+						<ee:transform doc:name="aggregate-req-sapi"
+							doc:id="c48e3405-a7d7-486b-aaf3-1f0954eafd9f">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
+output application/csv
+---
+payload]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<file:write doc:name="write-to-file" doc:id="62b2ce08-81b1-4e2c-80ee-303c104b6f18" path="/Users/mohammed.ali/Documents/Practice-files/test.csv" config-ref="File_Config" mode="CREATE_NEW"/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete>
+				<logger level="INFO" doc:name="End-logger" doc:id="bd2de408-9340-480d-b67a-ead4f4aa269d" message="batch completed"/>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+</mule>

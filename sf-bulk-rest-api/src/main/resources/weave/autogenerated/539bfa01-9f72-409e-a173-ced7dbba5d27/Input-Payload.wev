@@ -1,0 +1,23 @@
+%dw 2.0
+
+type auto_539bfa01_9f72_409e_a173_ced7dbba5d27_Input_Payload = {|
+  apiVersion?: String, 
+  columnDelimiter?: String, 
+  concurrencyMode?: String, 
+  contentType?: String, 
+  createdById?: String, 
+  createdDate?: String, 
+  id?: String, 
+  jobType?: String, 
+  lineEnding?: String, 
+  numberRecordsProcessed?: Number, 
+  object?: String, 
+  operation?: String, 
+  retries?: Number, 
+  state?: String, 
+  systemModstamp?: String, 
+  totalProcessingTime?: Number
+|} {"typeAlias": "QueryJobInfo",
+"class": "org.mule.extension.salesforce.api.bulk.QueryJobInfo",
+"typeId": "org.mule.extension.salesforce.api.bulk.QueryJobInfo"}
+

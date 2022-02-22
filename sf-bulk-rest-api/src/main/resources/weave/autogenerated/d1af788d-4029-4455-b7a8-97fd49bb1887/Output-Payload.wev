@@ -1,0 +1,19 @@
+%dw 2.0
+
+type auto_d1af788d_4029_4455_b7a8_97fd49bb1887_Output_Payload = {|
+  apiVersion?: String, 
+  columnDelimiter?: String, 
+  concurrencyMode?: String, 
+  contentType?: String, 
+  createdById?: String, 
+  createdDate?: String, 
+  id?: String, 
+  lineEnding?: String, 
+  object?: String, 
+  operation?: String, 
+  state?: String, 
+  systemModstamp?: String
+|} {"typeAlias": "QueryJobState",
+"class": "org.mule.extension.salesforce.api.bulk.QueryJobState",
+"typeId": "org.mule.extension.salesforce.api.bulk.QueryJobState"}
+

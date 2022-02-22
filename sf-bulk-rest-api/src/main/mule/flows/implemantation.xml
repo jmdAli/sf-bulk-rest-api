@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule
+	xmlns:att-mule-applicationlogger="http://www.mulesoft.org/schema/mule/att-mule-applicationlogger"
+	xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/att-mule-applicationlogger http://www.mulesoft.org/schema/mule/att-mule-applicationlogger/current/mule-att-mule-applicationlogger.xsd">
+	<flow name="invoke-get-sessionId-bulk-api-v2"
+		doc:id="539bfa01-9f72-409e-a173-ced7dbba5d27">
+		<set-variable value="#[payload.id]"
+			doc:name="jobId" doc:id="75a36787-0c06-4435-a317-04305871fc83"
+			variableName="jobId" />
+		<ee:transform doc:name="login request"
+			doc:id="4bdaf6e2-4c86-4a84-a2f0-2c31d72257a4">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="loginRequest"><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://schemas.xmlsoap.org/soap/envelope/
+ns ns01 urn:partner.soap.sforce.com
+---
+{
+	ns0#Envelope: {
+		ns0#Body: {
+			ns01#login: {
+				ns01#username: p('environment.salesforce.username'),
+				ns01#password: p('environment.salesforce.password') ++ p('environment.salesforce.securitytoken')
+			}
+		}
+	}
+}
+]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="call-sf-login-api-flow-flow"
+			doc:id="9a8e5e10-66b4-4a01-a6c2-3c0f323e5093"
+			name="call-sf-login-api-flow" />
+		<ee:transform doc:name="sessionId"
+			doc:id="a2e58814-a459-474e-8ad2-e62553140208">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="sessionId"><![CDATA[%dw 2.0
+output application/json
+---
+vars.loginResponse.Envelope.Body.loginResponse.result.sessionId]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform
+			doc:name="initialize maxRecords and SForce-Locator"
+			doc:id="d73abb83-2c03-4b8a-ac7a-34a7e2489080">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+"sessionId": vars.sessionId,
+"maxRecords": p('SF-test.DataFeedBatchSize'),
+"jobId": vars.jobId
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+			</ee:variables>
+		</ee:transform>
+		<vm:publish
+			doc:name="publish query Params - maxRecords &amp; Sforce-Locator"
+			doc:id="86a5c2d4-47dd-4b26-9979-f37b0b3f3e35"
+			config-ref="Recursive_VM_Config" sendCorrelationId="AUTO"
+			queueName="recursiveQueue" timeout="100">
+		</vm:publish>
+	</flow>
+	<flow name="invoke-get-batch-result-api"
+		doc:id="a4e587f2-5954-4324-a69e-7a1fe25bf493">
+		<vm:listener
+			doc:name="Consume Get batch result query params"
+			doc:id="370d8ea2-4304-4a93-b081-43adda708b01"
+			config-ref="Recursive_VM_Config" numberOfConsumers="1"
+			queueName="recursiveQueue">
+			<vm:response>
+				<vm:content><![CDATA[#[output application/json --- payload]]]></vm:content>
+			</vm:response>
+		</vm:listener>
+		<ee:transform doc:name="jobId, locator, maxRecords"
+			doc:id="111d4d0e-c095-4049-b32d-7c0edb7b7363">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="sessionId"><![CDATA[%dw 2.0
+output application/java
+---
+payload.header.sessionId]]></ee:set-variable>
+				<ee:set-variable variableName="parameters"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	sessionId:  payload.sessionId,
+	maxRecords: payload.maxRecords,
+	jobId : payload.jobId,
+	destination: payload.destination,
+	category: payload.category,
+	feedlocloc: payload.feedlocloc,
+	feedname: payload.feedname,
+	delimiter: payload.delimiter,
+	locator: payload.SforceLocator,
+	dwFileName: payload.dwFileName,
+	typeOfFile: payload.typeOfFile,
+	sendDoneFile: payload.sendDoneFile
+}]]></ee:set-variable>
+				<ee:set-variable variableName="logHeaders" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"sequenceId": uuid(),
+	"jobtype": payload.feedname default "",
+	"context": {
+		"idpTraceId": payload.'idpTraceId' default uuid()
+	}
+}]]></ee:set-variable>
+				<ee:set-variable variableName="jobId" ><![CDATA[%dw 2.0
+output application/java
+---
+payload.jobId]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<try doc:name="Try" doc:id="69621b87-054b-43b8-a7cc-c22adbd37eac">
+			<flow-ref
+				doc:name="call-call-get-batch-result-bulk-api-flow"
+				doc:id="4f5101df-b6a7-4ebf-910a-038720c2140a"
+				name="call-get-batch-result-bulk-api" />
+			<error-handler>
+				<on-error-propagate enableNotifications="true"
+					logException="true" doc:name="On Error Propagate"
+					doc:id="12f29d5b-b1bf-4228-91c6-eda055dc0c54" type="ANY">
+					<ee:transform doc:name="error message"
+						doc:id="aaa85327-79da-4e08-bab5-725b054f11cc">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+error.muleMessage.payload default error.description]]></ee:set-payload>
+						</ee:message>
+						<ee:variables>
+							<ee:set-variable variableName="httpStatus"><![CDATA[%dw 2.0
+output application/java
+---
+error.muleMessage.atributes.statusCode default 500]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+					<logger level="INFO" doc:name="Logger" doc:id="1535a245-6c36-4e2c-a34c-f5215d0bfb56" />
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<flow-ref doc:name="call-batch-flow" doc:id="cb6e421d-0555-49c1-af3e-3eadcdf56a42" name="batch-aggregator-flow"/>
+		<ee:transform doc:name="sforce locator"
+			doc:id="d1851716-d70c-435c-b5bd-c44e4ac14db5">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="sforce-locator"><![CDATA[%dw 2.0
+output application/java
+---
+attributes.headers.'sforce-locator' default null]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="check-if-locator-is-null_subFlow"
+			doc:id="cf9f28a7-ecd4-4dc2-b13c-a07c82b10b8b"
+			name="check-if-locator-is-null_subFlow" />
+	</flow>
+	<sub-flow name="check-if-locator-is-null_subFlow"
+		doc:id="4d367034-f37a-481f-ad66-79701866bad0">
+		<choice doc:name="check if locator is null?"
+			doc:id="2f6303a9-b661-47b0-a0b8-79cefa26cfec">
+			<when expression="#[vars.'sforce-locator' != &quot;null&quot;]">
+				<ee:transform
+					doc:name="construct payload to publish to recursiveQueue"
+					doc:id="40445b0a-f998-4a84-b6ea-6effadef10ad">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	sessionId:  vars.parameters.sessionId,
+	maxRecords:vars.parameters.maxRecords,
+	jobId :vars.parameters.jobId
+	
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="76bbd9f8-bc4d-4531-acf8-5ec5a0dfd77b" />
+				<vm:publish
+					doc:name="publish sforce-locator and maxRecords"
+					doc:id="7ccbdd22-3e56-48c9-ae90-a4761a0ac3bd"
+					config-ref="Recursive_VM_Config" sendCorrelationId="AUTO"
+					queueName="recursiveQueue" timeout="100" />
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="Logger" doc:id="a429dd7a-d91f-4e89-b6d4-007f5cd19438" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>

@@ -1,0 +1,17 @@
+%dw 2.0
+
+type auto_18bc81bb_d21c_40c0_8699_57091396efc1_Input_Variables_parameters = {|
+  sessionId: Any, 
+  maxRecords: Any, 
+  jobId: Any, 
+  destination: Any, 
+  category: Any, 
+  feedlocloc: Any, 
+  feedname: Any, 
+  delimiter: Any, 
+  locator: Any, 
+  dwFileName: Any, 
+  typeOfFile: Any, 
+  sendDoneFile: Any
+|}
+

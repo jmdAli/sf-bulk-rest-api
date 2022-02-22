@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_539bfa01_9f72_409e_a173_ced7dbba5d27_Output_Variables_loginResponse = Any
+

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:att-mule-applicationlogger="http://www.mulesoft.org/schema/mule/att-mule-applicationlogger"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/att-mule-applicationlogger http://www.mulesoft.org/schema/mule/att-mule-applicationlogger/current/mule-att-mule-applicationlogger.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	
+	<flow name="call-sf-login-api-flow" doc:id="3ecd4fe3-5c9e-455a-a2bc-f218845fbcfc" >
+		<logger level="INFO" doc:name="log-start-Login SFDC- GET session Id" doc:id="cc280ff6-ad8d-4fac-9655-acaa414705cb" message="request sent to Login SFDC- GET session Id"/>
+		<http:request method="POST" doc:name="Login SFDC- GET session Id" doc:id="596c8421-e5fb-4120-a888-426c2cb28c1f" config-ref="SFDC_REST_API_httpRequestConfig" path="/Soap/u/48.0" target="loginResponse" >
+			<http:body ><![CDATA[#[vars.loginRequest]]]></http:body>
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"SOAPAction" : "login",
+	"Content-Type": "text/xml",
+	"charset": "UTF-8" 
+}]]]></http:headers>
+		</http:request>
+		<logger level="INFO" doc:name="log-end-Login SFDC- GET session Id" doc:id="6762a083-f2e2-4ff4-af43-ff48fb2b1c54" message="received response from Login SFDC- GET session Id"/>
+	</flow>
+	<flow name="call-get-batch-result-bulk-api" doc:id="6de05937-28d5-4c95-b03e-640ebf8b8542" >
+		<logger level="INFO" doc:name="Logger" doc:id="e7a4b7a7-1f30-4620-ab55-fc4ec1b7abd0" message="request created for GET Batch Result Bulk API"/>
+		<ee:transform doc:name="request-payload" doc:id="f9c2e77e-b064-4c0b-bd94-7d03bceb1e4c">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"header": {
+		"sessionId": vars.parameters.sessionId
+	},
+	"body": {
+		"maxRecords": vars.parameters.maxRecords,
+		 "jobId": vars.parameters.jobId
+	}
+
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+<http:request method="GET" doc:name="GET Batch Result Bulk API" doc:id="2eb9f5a3-2735-425e-b643-3375890cb1b8" config-ref="SFDC_REST_API_httpRequestConfig" path="/data/v48.0/jobs/query/{jobId}/results" outputMimeType="application/csv; separator=|">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ vars.parameters.sessionId,
+	"Accept" : "application/csv"
+}]]]></http:headers>
+			<http:uri-params><![CDATA[#[output application/java
+---
+{
+	"jobId" : vars.parameters.jobId
+}]]]></http:uri-params>
+			<http:query-params><![CDATA[#[output application/java
+---
+{
+	"maxRecords" : vars.parameters.maxRecords,
+	("locator": vars.parameters.locator) if(vars.parameters.locator != null and vars.parameters.locator != "")
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="transform-results-json" doc:id="fa279c74-faac-4de0-8f9b-2b9996d659f9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="end-logger" doc:id="fdc6547e-6f72-49d4-b04f-d9befcef9365" message="received response for request created for GET Batch Result Bulk API"/>
+	</flow>
+	<flow name="get-bulk-query-job-info-flow" doc:id="fb82e5a2-c843-4f1c-a456-c61a1ad5b93d" >
+		<logger level="INFO" doc:name="log-start-get-bulk-query-job-info" doc:id="828598fe-d923-422a-a668-bdf64d0f98ed" message="request sent to get-bulk-query-job-info"/>
+		<salesforce:get-query-job-info-bulk-api-v2 doc:name="get-bulk-query-job-info" doc:id="577ea7cf-5b68-40fd-b562-a7414c698c8a" config-ref="Salesforce-config" id="#[payload.id]" />
+		<logger level="INFO" doc:name="log-end-get-bulk-query-job-info" doc:id="b98bf861-e828-4559-876b-12df510fb0ca" message="received response from get-bulk-query-job-info"/>
+	</flow>
+	<flow name="sf-create-bulk-api-flow" doc:id="d1af788d-4029-4455-b7a8-97fd49bb1887" >
+		<logger level="INFO" doc:name="log-start-create-bulk-query-job" doc:id="ca85b612-61be-4147-8ff7-50aec72c742f" message="#[vars.queryfinder.SOQL]"/>
+		<salesforce:create-query-job-bulk-api-v2 doc:name="create-bulk-query-job" doc:id="e6889a4a-a9a7-455c-bd0a-1f4e2f7d8986" config-ref="Salesforce-config" query="#[vars.queryfinder.SOQL]" columnDelimiter="PIPE" />
+	</flow>
+</mule>

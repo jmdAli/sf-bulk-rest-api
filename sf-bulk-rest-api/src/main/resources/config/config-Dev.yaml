@@ -1,0 +1,94 @@
+# API Version for API Manager
+application:
+  
+  api:
+    id: "0.0.0.0"
+    version: "v1"
+   
+#TLS configurations start     
+tls:
+  request:
+      path: "certs if any"
+      alias: "certs if any"
+      keyPassword: "certs if any"  
+      password: "certs if any"
+  listener:
+      trustStorePath: "certs if any"
+      trustStorePassword: "mule123"
+      keyStorePath: "certs if any"
+      alias: "certs if any"
+      keyPassword: "certs if any"
+      keyStorePassword: "certs if any"  
+
+#Salesforce  configuration starts 
+
+
+#Salesforce  Connector configuration starts 
+    
+  salesforce:
+     username:  "username" 
+     password:  "token" 
+     securitytoken:  "token" 
+     aauthUrl:  "https://host/services/Soap/u/48.0" 
+     retry:
+       frequency:  "300000"
+       reconnectattempts:  "3"
+  sf:
+    keyStore:
+      path: "certs if any"
+      keyPassword: "certs if any"
+      password: "certs if any"  
+      
+#Salesforce  Rest api configuration starts                                           
+sfdc-bulk-v2-api:
+  host: "salesforce host"
+  port: "8443"
+  basePath: "/services"
+  reconnection:
+    frequency: "20000"
+    attempts: "2"
+  responseTimeout: "600000"
+  connectionIdleTimeout: "600000"
+  maxRecords: "1000"
+  tls:
+    keystore:
+      path: "certs if any"
+      password: "certs if any" 
+      keyPassword: "certs if any"     
+
+    
+environment: 
+                   
+#Http config starts       
+  Http:
+    host:  "0.0.0.0"
+    port:  "8081"    
+    path:  "/api/*"
+    httpsport:  "9092"
+
+#VM config starts  
+  vmConfig:
+    queuename:  "recursiveQueue"  
+    queuetype:  ""
+    maxObMessages:  "0"
+    timeout:  "10"
+    numberOfConsumers:  "4"
+
+#Common configuration starts         
+common:
+  retry:
+    maxentries:  "3"
+    intervalbetweenretries: "30000"
+  batch:
+      agrregator:
+        small:
+          size: "100"   
+      block:
+        size: "100"     
+    
+# SOQL details insert below
+SF-test:
+  SOQL:  "insert SOQL"
+  DataFeedBatchSize:  "10"
+ 
+  
